@@ -1,0 +1,12 @@
+---
+# Guarded by xrpld_allow_restart. A validator that restarts drops out of
+# proposing for as long as it takes to catch up, so there are moments when you
+# want the config on disk and the restart later.
+- name: Restart xrpld
+  ansible.builtin.systemd_service:
+    name: "{{ xrpld_service }}"
+    state: restarted
+    daemon_reload: true
+  when: xrpld_allow_restart | bool
+  register: xrpld_restart
+  failed_when: xrpld_restart is failed and not ansible_check_mode

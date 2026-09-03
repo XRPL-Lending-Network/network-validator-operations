@@ -1,0 +1,11 @@
+---
+galaxy_info:
+  role_name: xrpld
+  author: Jago Morgan
+  description: Install and configure an XRP Ledger node, as a stock node or a validator
+  license: MIT
+  min_ansible_version: "2.14"
+  platforms:
+    - name: Ubuntu
+      versions: [noble]
+dependencies: []

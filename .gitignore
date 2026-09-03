@@ -1,0 +1,4 @@
+*.retry
+inventory.yml
+group_vars/*.yml
+!group_vars/*.example.yml

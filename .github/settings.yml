@@ -1,0 +1,14 @@
+# Repository metadata, in the format the Probot "Settings" app reads. If you
+# are not running that app, apply it with gh repo edit.
+repository:
+  description: >-
+    Open-source deployment, configuration, and operational guidance for
+    running an XRP Ledger validator with Ansible, stock node isolation, and
+    offline key management.
+  topics: >-
+    xrpl, xrp-ledger, rippled, xrpld, validator, ansible, ansible-role,
+    blockchain, infrastructure, devops, node-operator
+  has_issues: true
+  has_wiki: false
+  has_projects: false
+  default_branch: main

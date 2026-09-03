@@ -1,0 +1,7 @@
+---
+- name: Ensure xrpld is enabled and running
+  ansible.builtin.systemd_service:
+    name: "{{ xrpld_service }}"
+    enabled: true
+    state: started
+    daemon_reload: true

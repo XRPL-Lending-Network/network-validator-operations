@@ -1,0 +1,42 @@
+---
+# A validator with no peers is the failure this catches. It is silent
+# otherwise: the node starts, reports itself healthy, and simply never sees a
+# ledger.
+- name: Assert a validator has peers to talk to
+  ansible.builtin.assert:
+    that:
+      - xrpld_stock_peers | length > 0
+    fail_msg: >-
+      This node is configured as a validator, which means it talks only to the
+      addresses in xrpld_stock_peers, and that list is empty. It would start
+      with no peers at all.
+  when: xrpld_node_role == 'validator'
+
+- name: Deploy the validator list
+  ansible.builtin.template:
+    src: validators.txt.j2
+    dest: "{{ xrpld_validators_file }}"
+    owner: root
+    group: "{{ xrpld_group }}"
+    mode: "0640"
+  notify: Restart xrpld
+
+- name: Deploy the main configuration
+  ansible.builtin.template:
+    src: xrpld.cfg.j2
+    dest: "{{ xrpld_config_file }}"
+    owner: root
+    group: "{{ xrpld_group }}"
+    mode: "0640"
+  notify: Restart xrpld
+
+- name: Ensure data and log directories exist
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: "{{ xrpld_user }}"
+    group: "{{ xrpld_group }}"
+    mode: "0750"
+  loop:
+    - "{{ xrpld_database_path }}"
+    - "{{ xrpld_log_file | dirname }}"

@@ -1,0 +1,29 @@
+---
+# Copy to inventory.yml and fill in. inventory.yml is gitignored so real
+# addresses do not end up in a repository.
+#
+# The shape below is the one this kit assumes: one validator that talks only
+# to stock nodes of your own, and two or more stock nodes facing the network.
+# One stock node also works; two means the validator survives losing one.
+all:
+  children:
+
+    # Public peers. These face the network and are the only route in and out
+    # for the validator.
+    stock:
+      hosts:
+        stock1:
+          # Public address, or a private one if you reach it over a tunnel.
+          ansible_host: 203.0.113.10
+          # The address the validator dials.
+          xrpld_private_address: 10.0.0.20
+        stock2:
+          ansible_host: 203.0.113.11
+          xrpld_private_address: 10.0.0.21
+
+    # The validator. No public peer address, not in peer discovery, not
+    # reachable from the open network.
+    validators:
+      hosts:
+        val:
+          ansible_host: 10.0.0.10

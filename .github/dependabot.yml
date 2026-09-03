@@ -1,0 +1,12 @@
+# The role installs from apt and has no dependency manifest, so this only
+# watches the actions used by CI.
+
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly
+    groups:
+      actions:
+        patterns: ['*']

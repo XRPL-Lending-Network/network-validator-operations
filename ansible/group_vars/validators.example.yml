@@ -1,0 +1,29 @@
+---
+# Copy to validators.yml.
+xrpld_node_role: validator
+
+# Private addresses of your stock nodes. The validator talks to these and
+# nothing else. The role refuses to configure a validator with this empty,
+# because a validator with no peers starts, reports itself healthy, and never
+# sees a ledger.
+xrpld_stock_peers:
+  - 10.0.0.20
+  - 10.0.0.21
+
+# Node public keys of the stock nodes. Without this the validator floods them
+# with requests on a cold start, they charge it for the load and disconnect
+# it, and its peer count goes to zero.
+xrpld_cluster_nodes: []
+
+# Generated OFFLINE with validator-keys, on a machine that never touches the
+# network. Encrypt before it goes anywhere near a repository:
+#
+#   ansible-vault encrypt_string --name xrpld_validator_token '<token>'
+#
+# The master key stays offline. Only the token travels.
+xrpld_validator_token: ""
+
+# Permanent identity, also encrypted. Without it the node public key changes
+# whenever the database is wiped, and cluster_nodes on the other machines
+# stops matching.
+xrpld_node_seed: ""

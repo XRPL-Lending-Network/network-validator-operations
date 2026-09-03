@@ -1,0 +1,13 @@
+# Only the deployment tree is linted. docs/ and the repository metadata are
+# not Ansible content and confuse the file classifier.
+exclude_paths:
+  - .github/
+
+# The example inventories and group_vars are templates for the operator to
+# copy, not runnable configuration: the variables they reference are meant to
+# be undefined until someone fills them in.
+kinds:
+  - yaml: "ansible/inventory.example.yml"
+  - yaml: "ansible/group_vars/*.example.yml"
+
+profile: production

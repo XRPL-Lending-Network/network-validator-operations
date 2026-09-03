@@ -1,0 +1,219 @@
+---
+# The package is called xrpld now, not rippled, and the layout moved with the
+# rename. Values below were read off a real installed package rather than
+# copied from documentation, which still shows the old /etc/opt/ripple path.
+# A legacy "rippled" package exists in the repository too but lags in version.
+xrpld_package: xrpld
+xrpld_service: xrpld
+xrpld_user: xrpld
+xrpld_group: xrpld
+xrpld_config_dir: /etc/xrpld
+xrpld_config_file: "{{ xrpld_config_dir }}/xrpld.cfg"
+xrpld_validators_file: "{{ xrpld_config_dir }}/validators.txt"
+xrpld_log_file: /var/log/xrpld/debug.log
+
+# Empty means "whatever the channel offers", which is what you want for a
+# first install. Pin it explicitly everywhere else: upgrading a validator
+# should be a decision, not a side effect of re-running a playbook.
+#
+# See what is available with:  apt-cache madison xrpld
+xrpld_version: ""
+
+# --- apt ------------------------------------------------------------------
+xrpld_apt_key_url: https://repos.ripple.com/repos/api/gpg/key/public
+xrpld_apt_repo_url: https://repos.ripple.com/repos/rippled-deb
+# Read from the network map below, but overridable with -e. It is a separate
+# variable for a reason: an earlier version read the network map directly in
+# the repository task, and -e was silently ignored. That failure looks like
+# "the channel is wrong": apt updates happily and simply does not see versions
+# from the other channel.
+xrpld_apt_component: "{{ xrpld_net.apt_component | default('stable') }}"
+
+# --- networks -------------------------------------------------------------
+# The peer port is NOT the same on every network, and this is not cosmetic.
+# Connecting to the wrong port looks like it worked: the TCP connection opens,
+# the node receives validator proposals, and it quietly closes empty ledgers
+# of its own because it can never download ledger data. Take the value from
+# the hub's own server_info "ports" field rather than from an article.
+xrpld_networks:
+  mainnet:
+    network_id: main
+    apt_component: stable
+    bootstrap_hub: r.ripple.com
+    bootstrap_port: 51235
+    vl_sites: [https://vl.ripple.com, https://unl.xrplf.org]
+    vl_keys:
+      - ED2677ABFFD1B33AC6FBC3062B71F1E8397C1505E1C42C64D11AD1B28FF73F4734
+      - ED42AEC58B701EEBB77356FFFEC26F83C1F0407263530F068C7C73D392C7E06FD1
+
+  testnet:
+    network_id: testnet
+    apt_component: stable
+    bootstrap_hub: s.altnet.rippletest.net
+    bootstrap_port: 2459
+    vl_sites: [https://vl.altnet.rippletest.net]
+    vl_keys: [ED264807102805220DA0F312E71FC2C69E1552C9C5790F6C25E3729DEB573D5860]
+
+  devnet:
+    network_id: devnet
+    apt_component: stable
+    bootstrap_hub: s.devnet.rippletest.net
+    bootstrap_port: 2459
+    vl_sites: [https://vl.devnet.rippletest.net]
+    vl_keys: [EDBB54B0D9AEE071BB37784AF5A9E7CC49AC7A0EFCE868C54532BCB966B9CFC13B]
+
+xrpld_net: "{{ xrpld_networks[xrpl_network] }}"
+
+# --- ports ----------------------------------------------------------------
+# Listening port and dial port are different things. This is what the node
+# listens on; the port it dials out to comes from the network map above.
+xrpld_peer_port: 51235
+xrpld_rpc_port: 5005
+xrpld_ws_port: 6006
+
+# Admin interfaces on loopback. Do not move them to 0.0.0.0 because it is
+# convenient; the admin port is full control of the node.
+xrpld_admin_bind: 127.0.0.1
+
+# Where the peer port listens.
+#   stock      0.0.0.0, the node is public and accepts inbound
+#   validator  its private address only, so it cannot be reached from outside
+#              but its own stock nodes still can
+#
+# Do not bind a validator's peer port to 127.0.0.1: that cuts it off from its
+# own stock nodes as well, leaving it with outbound connections and no fallback.
+xrpld_peer_bind: "{{ '0.0.0.0' if xrpld_node_role == 'stock' else ansible_host }}"
+
+# --- node role ------------------------------------------------------------
+# stock      public peer, dials the network hub, takes part in peer discovery
+# validator  isolated, private peers only, no discovery
+xrpld_node_role: stock
+
+# Private addresses of the stock nodes a validator talks to. Required when the
+# role is validator; the config task refuses to proceed without it.
+xrpld_stock_peers: []
+
+# --- database -------------------------------------------------------------
+# 'auto' means do not write [node_size] at all and let the node pick from RAM
+# and core count. Its own matrix is more accurate than a guess, and this role
+# has been burned by guessing: a hardcoded 'medium' on an 8 GB VM produced
+# 7.8 GB of RSS and ten OOM kills in a row, with the node restarting its
+# initial sync from scratch every time.
+#
+# The same trap has a second form worth knowing. Initial sync is much hungrier
+# than steady state, so a size that runs fine for months can still fail to get
+# the node started on a network it has never seen. If a fresh node keeps being
+# killed, drop a step even if the setting was fine elsewhere.
+xrpld_node_size: auto
+
+xrpld_database_path: /var/lib/xrpld/db
+xrpld_node_db_path: /var/lib/xrpld/db/nudb
+
+# How many ledgers to keep before rotating. Budget for TWICE this on disk:
+# rotation creates a new backend alongside the old one and only deletes the
+# old one at the NEXT rotation, so two live backends is the steady state, not
+# a transient.
+#
+# Two more things that surprise people sizing this. The SQLite transaction
+# database is not counted in any per-ledger estimate and grows to tens of
+# gigabytes on a busy network. And SQLite does not shrink files, so that part
+# only ever goes up.
+xrpld_online_delete: 2000
+
+# 'none' means do not backfill history at all.
+#
+# A large value here is poison for a node starting from empty. It begins
+# acquiring history in PARALLEL with the current ledger, piles up thirty-odd
+# simultaneous acquisitions, saturates the job queue and starves itself. In
+# the log that reads as "Deferring InboundLedger timer due to load" tens of
+# thousands of times, while no state tree ever finishes.
+#
+# Serve deep history from a dedicated server, not from a validator.
+xrpld_ledger_history: none
+
+# --- peers ----------------------------------------------------------------
+# Empty means the section is not written and the node's own default applies
+# (21). Cluster and fixed peers do not count against the limit.
+#
+# Raising this is not free and not linear in the way people expect. Measured
+# on one public node: 156 peers produced 593 GB/day of egress and 191 peers
+# produced 1522 GB/day, which is 3.8 and 8.0 GB per peer. Check your
+# provider's allowance before raising it.
+#
+# There is also a floor worth knowing: too LOW a value makes a node refuse
+# inbound connections, so newcomers cannot reach it. If you care about being
+# reachable, do not leave this at the default.
+xrpld_peers_max: ""
+
+# How many manifests of unlisted validators the node keeps, and how many it
+# sends in one message to a peer. Added in 3.3.0, range 50..1000; older
+# versions do not have it, so only set it where you are certain of the version.
+#
+# Read the second half of that sentence carefully before lowering it. The
+# value caps the maximum ACCEPTED message size as well as the sent one, so a
+# small number makes the node deaf to manifests it would otherwise learn.
+xrpld_max_untrusted_count: ""
+
+# --- public WebSocket -----------------------------------------------------
+# Empty means nothing but the peer port faces outward. A non-empty value opens
+# a public WS port WITHOUT the admin directive, so only public commands.
+#
+# Set this deliberately and only on stock nodes. A validator should have no
+# public ports at all.
+xrpld_ws_public_port: ""
+
+# --- identity -------------------------------------------------------------
+# Permanent node seed; the node public key is derived from it. Empty means the
+# node generates a random one whenever its database is empty, so its identity
+# changes after every wipe and [cluster_nodes] on its neighbours stops
+# matching. Encrypt this with ansible-vault.
+xrpld_node_seed: ""
+
+# Validator token. The master key is generated OFFLINE with validator-keys and
+# never comes near this repository; only the token does, encrypted. Empty
+# means the node runs as an ordinary peer with no right to validate.
+xrpld_validator_token: ""
+
+# Node public keys of your own machines. Nodes in one cluster do not charge
+# each other for requests.
+#
+# Without this a validator behind its own pair of stock nodes will not start:
+# on a cold start it floods them with get-ledger requests, they charge it
+# ("Charging ... for moderate peer request"), and eventually disconnect it,
+# taking its peer count to zero. A public node spreads that load over twenty
+# peers; here it all lands on two.
+xrpld_cluster_nodes: []
+
+# Master keys to trust locally, added to validators.txt. This ADDS to the
+# publisher lists rather than replacing them.
+#
+# Empty is the right value almost always. Trusting validators by hand is not
+# something to do casually, which is what the signed lists are for.
+xrpld_trusted_validators: []
+
+# --- logging --------------------------------------------------------------
+# The node's own default is debug, which is several GB a day per node. Use
+# warning and turn debug on for a specific investigation:
+#   xrpld --conf /etc/xrpld/xrpld.cfg log_level debug
+xrpld_log_level: warning
+
+# Partitions raised back above the global level.
+#
+# A blanket warning turns out to be too blunt. ManifestCache logs AcceptedNew
+# at info, exactly once per new master key for the life of the process, and at
+# warning that line never reaches the file. You then have no way to tell
+# whether the node accepted a neighbour's manifest.
+#
+# That cost a day of debugging: the symptom was "the manifest is in the cache
+# but the key is not in the log", which reads as a code path being skipped
+# when it is really our own log level hiding it. The volume is one line per
+# validator, not a stream.
+xrpld_log_partitions:
+  - { name: ManifestCache, severity: info }
+
+# --- safety ---------------------------------------------------------------
+# false writes the config but does NOT restart. Useful when a node is in
+# production and a restart is unwelcome: a validator drops out of proposing
+# while it catches up. Changes land at the next planned restart.
+#   ansible-playbook playbooks/site.yml -e xrpld_allow_restart=false
+xrpld_allow_restart: true

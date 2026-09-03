@@ -1,0 +1,8 @@
+---
+# Copy to all.yml.
+#
+# mainnet, testnet or devnet. Everything that differs per network lives in the
+# role's network map, so this is the only place you say which one.
+xrpl_network: testnet
+
+ansible_user: deploy

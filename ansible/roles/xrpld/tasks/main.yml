@@ -1,0 +1,27 @@
+---
+- name: Assert the network is one we know
+  ansible.builtin.assert:
+    that:
+      - xrpl_network in xrpld_networks
+    fail_msg: >-
+      xrpl_network='{{ xrpl_network | default("(unset)") }}' is not described
+      in xrpld_networks. Add it there rather than hardcoding values in tasks:
+      the peer port and the validator list differ per network and getting
+      either wrong fails in a way that looks like the node working.
+  tags: [xrpld, always]
+
+- name: APT repository
+  ansible.builtin.import_tasks: repo.yml
+  tags: [xrpld, repo]
+
+- name: Install package
+  ansible.builtin.import_tasks: install.yml
+  tags: [xrpld, install]
+
+- name: Configuration
+  ansible.builtin.import_tasks: config.yml
+  tags: [xrpld, config]
+
+- name: Service
+  ansible.builtin.import_tasks: service.yml
+  tags: [xrpld, service]

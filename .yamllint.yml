@@ -1,0 +1,27 @@
+# Config for yamllint, run by pre-commit and in CI.
+#
+# Deviations from the default profile, all because of how Ansible is written:
+#   - long Jinja expressions and fail_msg strings do not wrap usefully
+#   - "true"/"false" as values is idiomatic Ansible, so truthy checks only keys
+#   - example inventories keep their own indentation for readability
+
+extends: default
+
+rules:
+  # Ansible files start with ---, GitHub's own config files conventionally do
+  # not. Requiring it would mean editing files whose format is not ours.
+  document-start: disable
+  line-length:
+    max: 120
+  braces:
+    max-spaces-inside: 1
+  comments:
+    min-spaces-from-content: 1
+  truthy:
+    check-keys: false
+  # Both of these are required by ansible-lint's own yamllint contract; it
+  # refuses to use a custom config that disagrees.
+  comments-indentation: disable
+  octal-values:
+    forbid-implicit-octal: true
+    forbid-explicit-octal: true

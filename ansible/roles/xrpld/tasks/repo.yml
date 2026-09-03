@@ -1,0 +1,25 @@
+---
+# The repository task carries its own tag. That matters more than it looks:
+# switching apt channel and then running with --tags install,service leaves
+# apt pointing at the old channel, and the install fails with "no available
+# installation candidate" for a version that plainly exists. Cost us an hour.
+- name: Add the XRPL apt repository
+  ansible.builtin.deb822_repository:
+    name: ripple
+    types: [deb]
+    uris: "{{ xrpld_apt_repo_url }}"
+    suites: "{{ ansible_facts.distribution_release }}"
+    components: "{{ xrpld_apt_component }}"
+    signed_by: "{{ xrpld_apt_key_url }}"
+    state: present
+    enabled: true
+  register: xrpld_repo
+
+# Not a handler on purpose. Handlers run at the end of the play, and the
+# cache has to be current before the install task a few lines later --
+# otherwise a channel switch and an install in the same run fails with
+# "no available installation candidate" for a version that exists.
+- name: Update apt cache after a repository change  # noqa: no-handler
+  ansible.builtin.apt:
+    update_cache: true
+  when: xrpld_repo is changed

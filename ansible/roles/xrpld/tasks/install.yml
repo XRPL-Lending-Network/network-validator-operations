@@ -1,0 +1,19 @@
+---
+- name: Install xrpld
+  ansible.builtin.apt:
+    name: >-
+      {{ xrpld_package }}{% if xrpld_version | length > 0 %}={{ xrpld_version }}{% endif %}
+    state: present
+    allow_downgrade: true
+    update_cache: true
+  register: xrpld_pkg
+  notify: Restart xrpld
+
+- name: Read the installed version
+  ansible.builtin.command: dpkg-query -W -f=${Version} {{ xrpld_package }}
+  register: xrpld_installed
+  changed_when: false
+
+- name: Show the installed version
+  ansible.builtin.debug:
+    msg: "{{ inventory_hostname }}: {{ xrpld_package }} {{ xrpld_installed.stdout }}"

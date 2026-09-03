@@ -1,0 +1,25 @@
+---
+# Bring up XRP Ledger nodes described in the inventory.
+#
+#   ansible-playbook -i inventory.yml playbooks/site.yml --check --diff
+#   ansible-playbook -i inventory.yml playbooks/site.yml
+#
+# Order matters on a first run. Stock nodes have to exist before the validator
+# can be pointed at them, and the validator refuses to configure without a
+# peer list, which is the check catching that rather than a node starting up
+# alone and looking fine.
+- name: Stock nodes
+  hosts: stock
+  become: true
+  gather_facts: true
+  roles:
+    - role: xrpld
+      tags: [xrpld, stock]
+
+- name: Validator
+  hosts: validators
+  become: true
+  gather_facts: true
+  roles:
+    - role: xrpld
+      tags: [xrpld, validator]

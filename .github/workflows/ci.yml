@@ -1,0 +1,47 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  yaml:
+    name: yaml
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+      - run: pip install yamllint==1.37.1
+      - run: yamllint -c .yamllint.yml .
+
+  ansible:
+    name: ansible
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ansible
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+      - run: pip install ansible-core ansible-lint
+      # --syntax-check parses the playbook, the role and every task file it
+      # imports. It does not evaluate variables, so the example inventory is
+      # enough: the real one is gitignored and never exists in CI.
+      - name: Syntax check
+        run: ansible-playbook -i inventory.example.yml playbooks/site.yml --syntax-check
+      # Runs from ansible/ so that ansible.cfg applies and roles/ resolves;
+      # the .ansible-lint config is picked up from the repository root.
+      - name: Lint
+        run: ansible-lint

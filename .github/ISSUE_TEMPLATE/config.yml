@@ -1,0 +1,11 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Security vulnerability
+    url: https://github.com/XRPL-Lending-Network/network-validator-operations/security/advisories/new
+    about: Please report security issues privately, and never include real keys.
+  - name: XRP Ledger protocol issues
+    url: https://github.com/XRPLF/rippled/issues
+    about: Bugs in xrpld itself belong upstream, not in this deployment kit.
+  - name: Monitoring for this shape of deployment
+    url: https://github.com/XRPL-Lending-Network/xrpl-vantage
+    about: Exporter, dashboard and alert rules that match the guide.

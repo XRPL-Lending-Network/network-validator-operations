@@ -1,0 +1,22 @@
+# Managed by Ansible — role xrpld. Local edits will be overwritten.
+#
+# Publisher lists are the normal way to decide who to trust. Keys below are
+# the publishers themselves, not individual validators.
+[validator_list_sites]
+{% for site in xrpld_net.vl_sites %}
+{{ site }}
+{% endfor %}
+
+[validator_list_keys]
+{% for key in xrpld_net.vl_keys %}
+{{ key }}
+{% endfor %}
+{% if xrpld_trusted_validators | length > 0 %}
+
+# Locally trusted master keys. These ADD to the publisher lists above rather
+# than replacing them.
+[validators]
+{% for key in xrpld_trusted_validators %}
+{{ key }}
+{% endfor %}
+{% endif %}

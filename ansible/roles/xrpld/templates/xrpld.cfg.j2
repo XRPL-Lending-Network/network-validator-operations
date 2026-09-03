@@ -1,0 +1,141 @@
+{# Managed by Ansible — role xrpld. Local edits will be overwritten. #}
+{# Network: {{ xrpl_network }} | node role: {{ xrpld_node_role }} #}
+
+[server]
+port_rpc_admin_local
+port_peer
+port_ws_admin_local
+{% if xrpld_ws_public_port %}
+port_ws_public
+{% endif %}
+
+{# Admin interfaces on loopback. Not relying on a firewall alone for this. #}
+[port_rpc_admin_local]
+port = {{ xrpld_rpc_port }}
+ip = {{ xrpld_admin_bind }}
+admin = {{ xrpld_admin_bind }}
+protocol = http
+
+[port_ws_admin_local]
+port = {{ xrpld_ws_port }}
+ip = {{ xrpld_admin_bind }}
+admin = {{ xrpld_admin_bind }}
+protocol = ws
+send_queue_limit = 500
+
+{% if xrpld_ws_public_port %}
+{# There is no admin directive here and there must not be. Its absence is what
+   makes the port public, meaning public commands only. Adding
+   admin = 0.0.0.0 would hand control of the node to the internet. #}
+[port_ws_public]
+port = {{ xrpld_ws_public_port }}
+ip = 0.0.0.0
+protocol = ws
+send_queue_limit = 500
+
+{% endif %}
+[port_peer]
+port = {{ xrpld_peer_port }}
+{# A validator listens for peers on its private address only. Unreachable
+   from outside, reachable by its own stock nodes. The firewall inside the
+   machine is a second line, not the only one. #}
+ip = {{ xrpld_peer_bind }}
+protocol = peer
+
+{% if xrpld_node_size != 'auto' %}
+[node_size]
+{{ xrpld_node_size }}
+{% endif %}
+
+[node_db]
+type=NuDB
+path={{ xrpld_node_db_path }}
+nudb_block_size=4096
+online_delete={{ xrpld_online_delete }}
+advisory_delete=0
+
+{# none = do not backfill. Otherwise a node starting from empty pulls history
+   in parallel with the current ledger, piles up simultaneous acquisitions and
+   starves itself. Serve deep history from a dedicated server. #}
+[ledger_history]
+{{ xrpld_ledger_history }}
+
+[database_path]
+{{ xrpld_database_path }}
+
+[debug_logfile]
+{{ xrpld_log_file }}
+
+[validators_file]
+{{ xrpld_validators_file | basename }}
+
+[network_id]
+{{ xrpld_net.network_id }}
+
+{% if xrpld_node_role == 'validator' %}
+{# Isolation: private addresses only, no public peer discovery.
+   peer_private=1 stops peers from telling others our address. #}
+[ips_fixed]
+{% for peer in xrpld_stock_peers %}
+{{ peer }} {{ xrpld_peer_port }}
+{% endfor %}
+
+[peer_private]
+1
+{% else %}
+{# [ips] are discovery hints, [ips_fixed] is a guaranteed connection to the
+   hub. Hints alone are not enough: a full-history peer is what hands the
+   state tree to a node starting from empty, and nothing guarantees discovery
+   finds one. #}
+[ips]
+{{ xrpld_net.bootstrap_hub }} {{ xrpld_net.bootstrap_port }}
+
+[ips_fixed]
+{{ xrpld_net.bootstrap_hub }} {{ xrpld_net.bootstrap_port }}
+{% endif %}
+{% if xrpld_peers_max %}
+
+{# Cluster and fixed peers do not count here, only ordinary ones. #}
+[peers_max]
+{{ xrpld_peers_max }}
+{% endif %}
+{% if xrpld_max_untrusted_count %}
+
+{# 3.3.0 and later only, range 50..1000. Caps both what is stored and the
+   maximum message size ACCEPTED from a peer. #}
+[overlay]
+max_untrusted_count = {{ xrpld_max_untrusted_count }}
+{% endif %}
+
+{% if xrpld_validator_token | length > 0 %}
+{# The token comes from ansible-vault. The master key never appears here. #}
+[validator_token]
+{{ xrpld_validator_token }}
+{% endif %}
+
+{% if xrpld_node_seed | length > 0 %}
+{# Permanent identity. Without it the node public key changes when the
+   database is wiped and [cluster_nodes] on the neighbours stops matching. #}
+[node_seed]
+{{ xrpld_node_seed }}
+
+{% endif %}
+{% if xrpld_cluster_nodes | length > 0 %}
+{# Own nodes do not charge each other for requests. Without this a validator
+   exhausts its stock nodes' limits on a cold start and they disconnect it. #}
+[cluster_nodes]
+{% for node in xrpld_cluster_nodes %}
+{{ node }}
+{% endfor %}
+
+{% endif %}
+{# Log level at startup. Commands run IN ORDER after the node is up, so mute
+   everything first and raise the partitions you need back afterwards. #}
+[rpc_startup]
+{ "command": "log_level", "severity": "{{ xrpld_log_level }}" }
+{% for part in xrpld_log_partitions %}
+{ "command": "log_level", "partition": "{{ part.name }}", "severity": "{{ part.severity }}" }
+{% endfor %}
+
+[ssl_verify]
+1

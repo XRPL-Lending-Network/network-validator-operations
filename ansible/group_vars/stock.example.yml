@@ -1,0 +1,21 @@
+---
+# Copy to stock.yml.
+xrpld_node_role: stock
+
+# Raise the peer cap if you want to be reachable. The default of 21 is low
+# enough that a node will refuse inbound connections, and newcomers then
+# cannot reach you at all.
+#
+# Bandwidth scales with this, and not gently. Measured on one node: 156 peers
+# produced 593 GB/day and 191 peers produced 1522 GB/day. Check your
+# provider's monthly allowance before picking a number.
+xrpld_peers_max: 60
+
+# History window. Two live backends is the steady state, so budget for twice
+# this on disk, plus the SQLite transaction database which no per-ledger
+# estimate includes and which never shrinks.
+xrpld_online_delete: 20000
+
+# Node public keys of the machines in your cluster, minus this one. Get them
+# from server_info.pubkey_node once each node has a permanent node_seed.
+xrpld_cluster_nodes: []
