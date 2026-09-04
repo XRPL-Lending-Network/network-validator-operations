@@ -99,6 +99,23 @@ back up; do not remove it before reading why.
 
 Ubuntu 24.04 and ansible-core 2.14 or newer. Tested against xrpld 3.3.0.
 
+## Monitoring
+
+[xrpl-vantage][vantage] is the companion piece: a Prometheus exporter, a Grafana
+dashboard and alert rules built for exactly this shape of deployment, including
+the failure modes described in the guide.
+
+## Maintained by
+
+Maintained by [XRPL Lending Network][org].
+
+This is an independent project. It is not affiliated with, endorsed by, or
+maintained by the XRP Ledger Foundation or Ripple. `xrpld` and the XLS
+specifications are the normative sources; everything here is downstream of them.
+
+[vantage]: https://github.com/XRPL-Lending-Network/xrpl-vantage
+[org]: https://github.com/XRPL-Lending-Network
+
 ## Licence
 
 MIT.
