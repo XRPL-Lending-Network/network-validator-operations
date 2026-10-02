@@ -12,6 +12,20 @@
       with no peers at all.
   when: xrpld_node_role == 'validator'
 
+# The template opens port_ws_public on 0.0.0.0 whenever xrpld_ws_public_port is
+# set, whatever the role. The test below uses the template's own truthiness on
+# purpose: a stricter check would accept or reject different values than the
+# template actually renders.
+- name: Assert public WebSocket access is disabled on validators
+  ansible.builtin.assert:
+    that:
+      - not xrpld_ws_public_port
+    fail_msg: >-
+      Public WebSocket access must be disabled when xrpld_node_role is
+      validator, but xrpld_ws_public_port is set to '{{ xrpld_ws_public_port }}'.
+      Leave it empty: a validator should have no public ports at all.
+  when: xrpld_node_role == 'validator'
+
 - name: Deploy the validator list
   ansible.builtin.template:
     src: validators.txt.j2
