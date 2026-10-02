@@ -216,6 +216,72 @@ peak, and outbound traffic against your provider's quota.
 
 Scrape over a private interface. Do not expose exporters publicly.
 
+### Verify after deployment or restart
+
+Run through this after the first deployment, a planned restart, a configuration
+change and a package upgrade. No single step proves the node is healthy; together
+they come close.
+
+1. **The node answers.** On the machine itself:
+
+   ```bash
+   xrpld server_info
+   ```
+
+   If the binary does not find its configuration on its own, point it there:
+   `xrpld --conf /etc/xrpld/xrpld.cfg server_info`. An answer proves the process
+   is up and nothing more. Do not paste this output anywhere public: it
+   describes your node.
+
+2. **The validated ledger is fresh and moving.** `validated_ledger.age` should be
+   a few seconds, and `validated_ledger.seq` should be higher when you read it
+   again a little later. Look at `server_state` as well, but `server_state` alone
+   is not proof that the node is current with the network. The section on
+   `server_state: full` below shows how it can say `full` while closing ledgers
+   nobody else has.
+
+3. **It agrees with the network.** Take `validated_ledger.seq` from the local
+   output, ask an independent node on the same network for that same ledger,
+   and compare its hash with the local `validated_ledger.hash`:
+
+   ```bash
+   SEQ='<VALIDATED_LEDGER_SEQ>'
+   curl -s -H 'Content-Type: application/json' \
+     -d "{\"method\":\"ledger\",\"params\":[{\"ledger_index\":$SEQ}]}" \
+     '<INDEPENDENT_NODE_URL>' | jq -r '.result.ledger_hash'
+   ```
+
+   The same hash at the same index means you are on the network's chain. Compare
+   at a fixed index rather than comparing two "latest" values: two reads taken a
+   few seconds apart will be a ledger or two apart, and that difference means
+   nothing.
+
+4. **The peers are the expected ones.** The `peers` number counts connections,
+   not the right connections. Check with `xrpld peers` that the node holds the
+   expected stock-node connections: a validator should be connected to its own
+   stock nodes, and each stock node should see the validator behind it as well
+   as the wider network.
+
+5. **Validator identity, for nodes that validate.** For nodes intended to
+   validate and configured with a validator token, verify the expected public
+   validator identity using local admin `server_info`: `pubkey_validator` should
+   be the master public key you published, the one starting `nHB...`. A node in
+   validator topology that runs without a token on purpose is an ordinary peer:
+   its `pubkey_validator` reads `none`, and that is correct.
+
+6. **Proposing, for the same nodes.** After synchronization, these nodes should
+   normally reach `proposing`. A validation-enabled node that does not reach or
+   keep a synchronized `proposing` state needs investigating. This step and the
+   previous one do not apply to a node without a token.
+
+7. **Not amendment blocked.** `server_info` includes `amendment_blocked` only
+   when the node is blocked. If it is there, the node is not healthy, whatever
+   `server_state` and the peer count say.
+
+8. **Upgrades: stock nodes first, validator last.** Upgrade the stock nodes one at
+   a time and run this check against the network after each one. Upgrade the
+   validator last, then go through the whole list again.
+
 ## What we broke
 
 ### `server_state: full` does not mean you are on the network
