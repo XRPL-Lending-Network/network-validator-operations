@@ -10,6 +10,17 @@
       either wrong fails in a way that looks like the node working.
   tags: [xrpld, always]
 
+- name: Assert the node role is one we know
+  ansible.builtin.assert:
+    that:
+      - xrpld_node_role in ['stock', 'validator']
+    fail_msg: >-
+      xrpld_node_role='{{ xrpld_node_role | default("(unset)") }}' is not
+      supported. Use either 'stock' or 'validator'. The defaults and the config
+      template branch on this value in opposite ways, so anything else renders
+      a node that is half one role and half the other.
+  tags: [xrpld, always]
+
 - name: APT repository
   ansible.builtin.import_tasks: repo.yml
   tags: [xrpld, repo]
