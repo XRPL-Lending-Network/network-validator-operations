@@ -164,11 +164,20 @@ validator-keys set_domain validator.example.org --keyfile <path>
 
 The first command produces the master key. The keyfile goes into offline storage
 on two separate media in two separate places. Only the token travels to the
-server, meaning the base64 string from the second command.
+server.
 
 `set_domain` issues a new token with an incremented sequence number plus an
-attestation string for your website. Keep in mind that every rotation creates a
-new sequence number the network still has to learn about.
+attestation string for your website. That makes the token from `create_token`
+out of date before it is ever used: deploy the token printed by `set_domain`,
+publish the attestation printed with it, and copy the keyfile to both backups
+again, because it now records the higher sequence. Once the node runs with it,
+`xrpld manifest <master public key>` should report the domain and sequence you
+just set.
+
+Every later rotation works the same way: a new token with a higher sequence,
+which the network still has to learn about, and a fresh keyfile backup. Going
+back to an older token is not a rollback. Once the network has seen a newer
+sequence it ignores the older manifest.
 
 ```ini
 [validator_token]
