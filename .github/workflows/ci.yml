@@ -50,7 +50,7 @@ jobs:
       - uses: actions/setup-python@v7
         with:
           python-version: '3.12'
-      - run: pip install ansible-core ansible-lint
+      - run: pip install ansible-core==2.21.5 ansible-lint==26.10.1
       # --syntax-check parses the playbook, the role and every task file it
       # imports. It does not evaluate variables, so the example inventory is
       # enough: the real one is gitignored and never exists in CI.
@@ -60,3 +60,21 @@ jobs:
       # the .ansible-lint config is picked up from the repository root.
       - name: Lint
         run: ansible-lint
+
+  ansible-minimum:
+    name: ansible-core 2.16
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ansible
+    steps:
+      - uses: actions/checkout@v7
+      # ansible-core 2.16 runs on Python 3.10 to 3.12 on the control node.
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.12'
+      - run: pip install ansible-core==2.16.14
+      # The oldest release the README promises. Syntax check is enough to catch
+      # a module or keyword that does not exist there yet.
+      - name: Syntax check
+        run: ansible-playbook -i inventory.example.yml playbooks/site.yml --syntax-check

@@ -104,7 +104,9 @@ back up; do not remove it before reading why.
 
 ## Requirements
 
-Ubuntu 24.04 and ansible-core 2.14 or newer. Tested against xrpld 3.3.0.
+Ubuntu 24.04 and ansible-core 2.16 or newer. 2.16 is the first release that
+supports Python 3.12, which Ubuntu 24.04 ships, on the managed host; it needs
+Python 3.10 to 3.12 on the machine you run it from.
 
 ## Monitoring
 
