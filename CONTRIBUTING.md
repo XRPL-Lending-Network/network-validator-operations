@@ -78,10 +78,24 @@ cd ansible && ansible-playbook -i inventory.example.yml playbooks/site.yml --syn
 Hook versions are pinned by commit hash, so a local run uses the same tool
 versions as CI.
 
-Testing a change against real machines is better than not, but not everyone
-has three spare hosts. If you could not run it, say so in the pull request —
-a reviewed patch that has not been executed is still worth having, it just
-needs someone else to run it.
+The configuration part of the role can be tested without any machine. These
+render the templates for both node roles on every network, then run the
+config tasks in check mode against local hosts and check what they accept,
+what they refuse, and that no token or seed reaches the output:
+
+```bash
+ansible-playbook -i localhost, tests/render.yml
+bash tests/run.sh
+```
+
+A change to what the config contains should come with a check in
+`tests/render.yml`; a new assertion with a case in `tests/run.sh`.
+
+Package installation, the service and the wait for sync still need a real
+Ubuntu host. Testing there is better than not, but not everyone has three
+spare hosts. If you could not run it, say so in the pull request: a reviewed
+patch that has not been executed is still worth having, it just needs
+someone else to run it.
 
 ## Pull requests
 

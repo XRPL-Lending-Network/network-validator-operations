@@ -1,0 +1,16 @@
+---
+# Two local hosts, one per play in site.yml. Nothing here connects anywhere.
+stock:
+  hosts:
+    test-stock:
+validators:
+  hosts:
+    test-validator:
+      ansible_host: 10.0.0.10
+      xrpld_node_role: validator
+      xrpld_stock_peers: [10.0.0.11, 10.0.0.12]
+all:
+  vars:
+    ansible_connection: local
+    ansible_python_interpreter: "{{ ansible_playbook_python }}"
+    xrpl_network: testnet

@@ -1,0 +1,118 @@
+---
+# Renders the role's templates for both node roles on every network and checks
+# what ends up in them. No target host and no root needed:
+#
+#   ansible-playbook -i localhost, tests/render.yml
+- name: Render the role's templates
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  vars_files:
+    - ../ansible/roles/xrpld/defaults/main.yml
+  vars:
+    templates: "{{ playbook_dir }}/../ansible/roles/xrpld/templates"
+    ansible_host: 10.0.0.10
+    # Passed to every render below rather than set here: vars_files outranks
+    # play vars, so a value here would lose to the empty default.
+    peers: [10.0.0.11, 10.0.0.12]
+    # What ansible-vault encrypt_string --stdin-name stores when the value is
+    # pasted and followed by Enter: the trailing newline is kept.
+    pasted_token: "TOKENLINE1\nTOKENLINE2\n"
+    pasted_seed: "ssExampleSeed\n"
+    cases: "{{ ['stock', 'validator'] | product(['mainnet', 'testnet', 'devnet']) | list }}"
+  tasks:
+    - name: Render xrpld.cfg and validators.txt for every role and network
+      vars:
+        case:
+          xrpld_node_role: "{{ item.0 }}"
+          xrpl_network: "{{ item.1 }}"
+          xrpld_stock_peers: "{{ peers }}"
+      ansible.builtin.set_fact:
+        rendered: >-
+          {{ rendered | default({}) | combine({item.0 ~ '/' ~ item.1: {
+          'cfg': lookup('ansible.builtin.template', templates ~ '/xrpld.cfg.j2', template_vars=case),
+          'vl': lookup('ansible.builtin.template', templates ~ '/validators.txt.j2', template_vars=case)}}) }}
+      loop: "{{ cases }}"
+
+    - name: Check what every config carries
+      vars:
+        net: "{{ xrpld_networks[item.1] }}"
+        cfg: "{{ rendered[item.0 ~ '/' ~ item.1].cfg }}"
+        vl: "{{ rendered[item.0 ~ '/' ~ item.1].vl }}"
+      ansible.builtin.assert:
+        that:
+          - ('[network_id]\n' ~ net.network_id ~ '\n') in cfg
+          - net.vl_sites | select('in', vl) | list | length == net.vl_sites | length
+          - net.vl_keys | select('in', vl) | list | length == net.vl_keys | length
+          - "'ip = 127.0.0.1\\nadmin = 127.0.0.1' in cfg"
+          - "'[validator_token]' not in cfg"
+          - "'[node_seed]' not in cfg"
+          - "'[port_ws_public]' not in cfg"
+        fail_msg: "{{ item.0 }} on {{ item.1 }}: config is missing something every node needs"
+        quiet: true
+      loop: "{{ cases }}"
+
+    - name: Check that a stock node is public and dials the network hub
+      vars:
+        net: "{{ xrpld_networks[item.1] }}"
+        cfg: "{{ rendered['stock/' ~ item.1].cfg }}"
+      ansible.builtin.assert:
+        that:
+          - ('[ips]\n' ~ net.bootstrap_hub ~ ' ' ~ net.bootstrap_port ~ '\n') in cfg
+          - ('[ips_fixed]\n' ~ net.bootstrap_hub ~ ' ' ~ net.bootstrap_port ~ '\n') in cfg
+          - "'[port_peer]\\nport = 51235\\n' in cfg"
+          - "'ip = 0.0.0.0\\nprotocol = peer' in cfg"
+          - "'[peer_private]' not in cfg"
+        fail_msg: "stock on {{ item.1 }}: not rendered as a public node"
+        quiet: true
+      loop: "{{ ['stock'] | product(['mainnet', 'testnet', 'devnet']) | list }}"
+
+    - name: Check that a validator is private and talks only to its stock nodes
+      vars:
+        net: "{{ xrpld_networks[item.1] }}"
+        cfg: "{{ rendered['validator/' ~ item.1].cfg }}"
+      ansible.builtin.assert:
+        that:
+          - "'[ips_fixed]\\n10.0.0.11 51235\\n10.0.0.12 51235\\n' in cfg"
+          - "'[peer_private]\\n1\\n' in cfg"
+          - "'ip = 10.0.0.10\\nprotocol = peer' in cfg"
+          - "'[ips]\\n' not in cfg"
+          - net.bootstrap_hub not in cfg
+          - "'0.0.0.0' not in cfg"
+        fail_msg: "validator on {{ item.1 }}: not rendered as an isolated node"
+        quiet: true
+      loop: "{{ ['validator'] | product(['mainnet', 'testnet', 'devnet']) | list }}"
+
+    - name: Render a validator with a token and seed pasted with trailing newlines
+      ansible.builtin.set_fact:
+        secret_cfg: >-
+          {{ lookup('ansible.builtin.template', templates ~ '/xrpld.cfg.j2',
+          template_vars={'xrpld_node_role': 'validator', 'xrpl_network': 'mainnet', 'xrpld_stock_peers': peers,
+                         'xrpld_validator_token': pasted_token,
+                         'xrpld_node_seed': pasted_seed}) }}
+
+    - name: Check that the token and seed are written without stray blank lines
+      ansible.builtin.assert:
+        that:
+          - "'[validator_token]\\nTOKENLINE1\\nTOKENLINE2\\n\\n[node_seed]' in secret_cfg"
+          - "'[node_seed]\\nssExampleSeed\\n\\n[rpc_startup]' in secret_cfg"
+        fail_msg: token or seed section is not rendered as expected
+        quiet: true
+
+    - name: Render a stock node with public WebSocket access
+      ansible.builtin.set_fact:
+        ws_cfg: >-
+          {{ lookup('ansible.builtin.template', templates ~ '/xrpld.cfg.j2',
+          template_vars={'xrpld_node_role': 'stock', 'xrpl_network': 'testnet',
+                         'xrpld_ws_public_port': 6007}) }}
+
+    - name: Check that the public WebSocket port has no admin rights
+      vars:
+        section: "{{ ws_cfg | regex_search('\\[port_ws_public\\][^\\[]*') }}"
+      ansible.builtin.assert:
+        that:
+          - "'port = 6007' in section"
+          - "'ip = 0.0.0.0' in section"
+          - "'admin' not in section"
+        fail_msg: public WebSocket section is wrong
+        quiet: true

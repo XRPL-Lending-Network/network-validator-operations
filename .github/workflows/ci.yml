@@ -74,7 +74,32 @@ jobs:
         with:
           python-version: '3.12'
       - run: pip install ansible-core==2.16.14
-      # The oldest release the README promises. Syntax check is enough to catch
-      # a module or keyword that does not exist there yet.
+      # The oldest release the README promises. Syntax check catches a module or
+      # keyword that does not exist there yet; the tests below run the config
+      # tasks on it as well.
       - name: Syntax check
         run: ansible-playbook -i inventory.example.yml playbooks/site.yml --syntax-check
+      - name: Template renders
+        working-directory: .
+        run: ansible-playbook -i localhost, tests/render.yml
+      - name: Role checks
+        working-directory: .
+        run: bash tests/run.sh
+
+  role-tests:
+    name: role tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.12'
+      - run: pip install ansible-core==2.21.5
+      # Renders the templates for both node roles on every network, then runs
+      # the role in check mode against two local hosts: what it accepts, what
+      # it refuses, and that no token or seed reaches the output. Nothing
+      # connects anywhere and every secret is a made-up sentinel.
+      - name: Template renders
+        run: ansible-playbook -i localhost, tests/render.yml
+      - name: Role checks
+        run: bash tests/run.sh

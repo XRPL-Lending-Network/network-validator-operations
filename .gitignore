@@ -1,4 +1,6 @@
 *.retry
 inventory.yml
+# Fixture for tests/run.sh: two local hosts, no real addresses.
+!tests/inventory.yml
 ansible/group_vars/*.yml
 !ansible/group_vars/*.example.yml

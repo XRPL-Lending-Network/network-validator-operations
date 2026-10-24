@@ -36,5 +36,6 @@ validator, or both? `--check --diff` only is a fine answer, just say so.
 
 - [ ] `pre-commit run --all-files` passes
 - [ ] `ansible-playbook -i inventory.example.yml playbooks/site.yml --syntax-check` passes
+- [ ] `ansible-playbook -i localhost, tests/render.yml` and `bash tests/run.sh` pass
 - [ ] No real addresses, keys or domains: examples use RFC 1918 / RFC 5737 and `example.org`
 - [ ] Commits are signed
