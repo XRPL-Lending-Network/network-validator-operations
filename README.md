@@ -36,6 +36,9 @@ ansible-playbook playbooks/site.yml --check --diff
 ansible-playbook playbooks/site.yml
 ```
 
+`--diff` shows the changes to every file except `xrpld.cfg`. That one carries
+the decrypted validator token and node seed, so the role never prints its diff.
+
 `inventory.yml` and the non-example `group_vars` are gitignored, so real
 addresses and keys do not end up committed by accident.
 
@@ -62,8 +65,12 @@ never touches the network, and it stays there. Only the token it produces
 travels, and it travels encrypted:
 
 ```bash
-ansible-vault encrypt_string --name xrpld_validator_token '<token>'
+ansible-vault encrypt_string --stdin-name xrpld_validator_token
 ```
+
+Paste the token, press Enter, then Ctrl-D. Passed as an argument instead, the
+token would stay in your shell history. The newline Enter adds is trimmed when
+the config is written.
 
 Automating the ceremony would mean the master key passing through a playbook,
 a log, or a temporary file. Whoever holds that key can take over your

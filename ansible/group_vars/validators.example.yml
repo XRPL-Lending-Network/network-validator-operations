@@ -18,7 +18,10 @@ xrpld_cluster_nodes: []
 # Generated OFFLINE with validator-keys, on a machine that never touches the
 # network. Encrypt before it goes anywhere near a repository:
 #
-#   ansible-vault encrypt_string --name xrpld_validator_token '<token>'
+#   ansible-vault encrypt_string --stdin-name xrpld_validator_token
+#
+# Paste the token, press Enter, then Ctrl-D. Passed as an argument instead, it
+# would stay in your shell history.
 #
 # The master key stays offline. Only the token travels.
 xrpld_validator_token: ""

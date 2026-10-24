@@ -110,14 +110,14 @@ max_untrusted_count = {{ xrpld_max_untrusted_count }}
 {% if xrpld_validator_token | length > 0 %}
 {# The token comes from ansible-vault. The master key never appears here. #}
 [validator_token]
-{{ xrpld_validator_token }}
+{{ xrpld_validator_token | trim }}
 {% endif %}
 
 {% if xrpld_node_seed | length > 0 %}
 {# Permanent identity. Without it the node public key changes when the
    database is wiped and [cluster_nodes] on the neighbours stops matching. #}
 [node_seed]
-{{ xrpld_node_seed }}
+{{ xrpld_node_seed | trim }}
 
 {% endif %}
 {% if xrpld_cluster_nodes | length > 0 %}

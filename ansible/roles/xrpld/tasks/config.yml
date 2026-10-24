@@ -35,6 +35,9 @@
     mode: "0640"
   notify: Restart xrpld
 
+# The rendered file carries the decrypted validator token and node seed, so
+# its diff is never shown: with --diff it would print both to the terminal,
+# and from there into CI output or a log pasted into a support thread.
 - name: Deploy the main configuration
   ansible.builtin.template:
     src: xrpld.cfg.j2
@@ -42,6 +45,7 @@
     owner: root
     group: "{{ xrpld_group }}"
     mode: "0640"
+  diff: false
   notify: Restart xrpld
 
 - name: Ensure data and log directories exist
