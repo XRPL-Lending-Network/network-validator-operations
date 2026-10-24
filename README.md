@@ -113,6 +113,21 @@ Ubuntu 24.04 and ansible-core 2.16 or newer. 2.16 is the first release that
 supports Python 3.12, which Ubuntu 24.04 ships, on the managed host; it needs
 Python 3.10 to 3.12 on the machine you run it from.
 
+| | Version | How it was checked |
+|---|---|---|
+| ansible-core | 2.16.14 and 2.21.5 | Syntax, lint, template renders and config checks in CI |
+| xrpld | 3.4.1 | Rendered config compared with our mainnet nodes, 2026-10-24 |
+| Managed hosts | Ubuntu 24.04 | Target platform; a fresh install has not been run for this release |
+
+The layout the role renders is the one our own mainnet validator and stock
+nodes run on xrpld 3.4.1, compared on 2026-10-24: admin ports on loopback, the
+validator's peer port on its private address with `[peer_private]` and fixed
+connections to two stock nodes, the stock nodes public and fixed to the network
+hub, cluster keys on all three. Node size, retention and the peer cap are set
+per host there, as they should be here.
+
+Changes between releases are in [CHANGELOG.md](CHANGELOG.md).
+
 ## Monitoring
 
 [xrpl-vantage][vantage] is the companion piece: a Prometheus exporter, a Grafana
