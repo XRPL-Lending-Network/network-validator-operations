@@ -23,6 +23,21 @@ jobs:
           python-version: '3.12'
       - run: pip install yamllint==1.37.1
       - run: yamllint -c .yamllint.yml .
+      # The working inventory and group_vars hold real addresses and, once
+      # filled in, Vault-encrypted keys. Fail if .gitignore stops covering
+      # them, starts hiding the examples, or a tracked file already matches.
+      - name: Private inventory and vars are gitignored
+        run: |
+          for f in ansible/inventory.yml ansible/group_vars/all.yml \
+                   ansible/group_vars/stock.yml ansible/group_vars/validators.yml; do
+            git check-ignore --no-index -q "$f" || { echo "::error::$f is not gitignored"; exit 1; }
+          done
+          for f in ansible/inventory.example.yml ansible/group_vars/all.example.yml \
+                   ansible/group_vars/stock.example.yml ansible/group_vars/validators.example.yml; do
+            if git check-ignore --no-index -q "$f"; then echo "::error::$f is gitignored"; exit 1; fi
+          done
+          tracked=$(git ls-files -ci --exclude-standard)
+          test -z "$tracked" || { echo "::error::tracked files match .gitignore: $tracked"; exit 1; }
 
   ansible:
     name: ansible
