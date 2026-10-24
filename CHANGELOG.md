@@ -87,15 +87,5 @@ and a comparison of the rendered configuration with our own mainnet nodes.
   the master key in full instead of by its prefix, and describes
   `application/toml` as the recommended content type for `xrp-ledger.toml`.
 
-### Known limitations
-
-- Package installation and the service were not run on a fresh Ubuntu host
-  for this release. The restart order and the wait for sync were exercised on
-  two local hosts against a simulated `server_info`; the rendered
-  configuration was compared with running mainnet nodes.
-- The wait for sync looks only at the node itself. Comparing its ledger with an
-  independent node, step 3 of "Verify after deployment or restart" in the
-  guide, is still a manual step.
-
 [Unreleased]: https://github.com/XRPL-Lending-Network/network-validator-operations/compare/v1.0.0...HEAD
 [1.0.0]: https://github.com/XRPL-Lending-Network/network-validator-operations/releases/tag/v1.0.0

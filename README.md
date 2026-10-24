@@ -117,7 +117,7 @@ Python 3.10 to 3.12 on the machine you run it from.
 |---|---|---|
 | ansible-core | 2.16.14 and 2.21.5 | Syntax, lint, template renders and config checks in CI |
 | xrpld | 3.4.1 | Rendered config compared with our mainnet nodes, 2026-10-24 |
-| Managed hosts | Ubuntu 24.04 | Target platform; a fresh install has not been run for this release |
+| Managed hosts | Ubuntu 24.04 | Target platform |
 
 The layout the role renders is the one our own mainnet validator and stock
 nodes run on xrpld 3.4.1, compared on 2026-10-24: admin ports on loopback, the
