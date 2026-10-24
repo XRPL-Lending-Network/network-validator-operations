@@ -83,6 +83,21 @@
         quiet: true
       loop: "{{ ['validator'] | product(['mainnet', 'testnet', 'devnet']) | list }}"
 
+    - name: Render a validator reached over a public address
+      ansible.builtin.set_fact:
+        public_ssh_cfg: >-
+          {{ lookup('ansible.builtin.template', templates ~ '/xrpld.cfg.j2',
+          template_vars={'xrpld_node_role': 'validator', 'xrpl_network': 'mainnet', 'xrpld_stock_peers': peers,
+                         'ansible_host': '203.0.113.50', 'xrpld_private_address': '10.0.0.10'}) }}
+
+    - name: Check that its peer port still listens on the private address
+      ansible.builtin.assert:
+        that:
+          - "'ip = 10.0.0.10\\nprotocol = peer' in public_ssh_cfg"
+          - "'203.0.113.50' not in public_ssh_cfg"
+        fail_msg: validator peer port does not follow xrpld_private_address
+        quiet: true
+
     - name: Render a validator with a token and seed pasted with trailing newlines
       ansible.builtin.set_fact:
         secret_cfg: >-

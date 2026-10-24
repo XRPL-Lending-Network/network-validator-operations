@@ -12,6 +12,16 @@
       with no peers at all.
   when: xrpld_node_role == 'validator'
 
+- name: Assert a validator's peer port listens on a private address
+  ansible.builtin.assert:
+    that:
+      - xrpld_peer_bind is regex(xrpld_validator_private_ranges | join('|'), ignorecase=true)
+    fail_msg: >-
+      This validator's peer port would listen on {{ xrpld_peer_bind }}, which is
+      not a private address. Set xrpld_private_address to its address on the
+      private network it shares with the stock nodes.
+  when: xrpld_node_role == 'validator'
+
 # The template opens port_ws_public on 0.0.0.0 whenever xrpld_ws_public_port is
 # set, whatever the role. The test below uses the template's own truthiness on
 # purpose: a stricter check would accept or reject different values than the

@@ -26,4 +26,8 @@ all:
     validators:
       hosts:
         val:
+          # Over the tunnel, or its public address if that is how you reach SSH.
           ansible_host: 10.0.0.10
+          # Where its peer port listens: the private address the stock nodes
+          # dial. Required whenever ansible_host is not that address.
+          xrpld_private_address: 10.0.0.10

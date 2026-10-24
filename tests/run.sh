@@ -56,6 +56,20 @@ refuses "unknown network" "is not described" test-stock -e xrpl_network=moonnet
 refuses "validator without stock peers" "that list is empty" test-validator -e '{"xrpld_stock_peers": []}'
 refuses "validator with public WebSocket" "Public WebSocket access must be disabled" \
   test-validator -e xrpld_ws_public_port=6007
+refuses "validator reached over a public address" "not a private address" \
+  test-validator -e ansible_host=203.0.113.50
+accepts "validator with its private address set" test-validator \
+  -e ansible_host=203.0.113.50 -e xrpld_private_address=10.0.0.10
+# The refused addresses below are routable on purpose: they sit just outside
+# each private range, which is what a boundary test needs.
+for address in 10.1.2.3 172.16.0.1 172.31.255.1 192.168.1.1 100.64.0.1 100.127.0.1 fd12:3456::1 FD12::1; do
+  accepts "private address $address" test-validator -e "xrpld_private_address=$address"
+done
+for address in 11.0.0.1 172.15.0.1 172.32.0.1 192.169.0.1 100.63.0.1 100.128.0.1 2001:db8::1; do
+  refuses "public address $address" "not a private address" test-validator -e "xrpld_private_address=$address"
+done
+accepts "private range added by the operator" test-validator -e xrpld_private_address=198.18.0.5 \
+  -e '{"xrpld_validator_private_ranges": ["^198[.]18[.]"]}'
 TAGS=repo refuses "old apt channel variable" "are no longer used" test-stock -e xrpld_apt_component=stable
 TAGS=repo refuses "old apt channel key in the network map" "are no longer used" test-stock \
   -e '{"xrpld_networks": {"testnet": {"network_id": "testnet", "apt_component": "stable"}}}'

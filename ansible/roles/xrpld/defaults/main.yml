@@ -90,9 +90,29 @@ xrpld_admin_bind: 127.0.0.1
 #   validator  its private address only, so it cannot be reached from outside
 #              but its own stock nodes still can
 #
+# For a validator, set xrpld_private_address in the inventory. Without it the
+# role falls back to ansible_host, which is right only if you reach the
+# validator over the private network; reach it over its public address and
+# the peer port would face the internet. The config task refuses a validator
+# address that is not private either way.
+#
 # Do not bind a validator's peer port to 127.0.0.1: that cuts it off from its
 # own stock nodes as well, leaving it with outbound connections and no fallback.
-xrpld_peer_bind: "{{ '0.0.0.0' if xrpld_node_role == 'stock' else ansible_host }}"
+xrpld_peer_bind: >-
+  {{ '0.0.0.0' if xrpld_node_role == 'stock'
+  else (xrpld_private_address | default(ansible_host)) }}
+
+# Addresses the config task accepts for a validator's peer port: RFC 1918, the
+# 100.64.0.0/10 shared range that tunnels such as Tailscale use, and IPv6
+# unique local addresses. If your private network uses another range, add it
+# here as a regular expression rather than switching the check off; anything
+# that is not private means the peer port faces the internet.
+xrpld_validator_private_ranges:
+  - '^10[.]'
+  - '^192[.]168[.]'
+  - '^172[.](1[6-9]|2[0-9]|3[01])[.]'
+  - '^100[.](6[4-9]|[7-9][0-9]|1[01][0-9]|12[0-7])[.]'
+  - '^f[cd][0-9a-f]{2}:'
 
 # --- node role ------------------------------------------------------------
 # stock      public peer, dials the network hub, takes part in peer discovery
