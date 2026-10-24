@@ -44,10 +44,10 @@ shape and why.
 **Admin RPC is privileged.** The generated configuration binds it to loopback.
 A change that moves it, or that widens the admin allow-list, is in scope.
 
-**Upstream package trust.** The role installs from Ripple's apt repository,
-verified by that repository's signing key. Anything that weakens that
-verification — an unsigned source, a downgraded transport, a key fetched over
-plain HTTP — is in scope.
+**Upstream package trust.** The role installs from the XRP Ledger Foundation's
+apt repository at packages.xrplf.org, verified by its signing key. Anything
+that weakens that verification, such as an unsigned source, a downgraded
+transport or a key fetched over plain HTTP, is in scope.
 
 ## Testing
 

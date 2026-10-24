@@ -3,11 +3,25 @@
 # switching apt channel and then running with --tags install,service leaves
 # apt pointing at the old channel, and the install fails with "no available
 # installation candidate" for a version that plainly exists. Cost us an hour.
-#
+
+# xrpld_apt_component and the apt_component key of the network map used to
+# name the channel on the old repository. Failing beats ignoring them: an
+# ignored override installs from a channel nobody chose.
+- name: Assert the old channel settings are not used
+  ansible.builtin.assert:
+    that:
+      - xrpld_apt_component is not defined
+      - xrpld_net.apt_component is not defined
+    fail_msg: >-
+      xrpld_apt_component and the apt_component key in xrpld_networks are no
+      longer used. Set the channel with xrpld_apt_channel, or apt_channel in
+      the network map (stable, rc, beta or develop); packages come from
+      packages.xrplf.org.
+
 # deb822_repository needs python3-debian on the managed host, and a minimal
-# image does not always have it. Without it the next task fails before it
-# writes anything. In --check mode this task installs nothing, so a check run
-# on a host that lacks the library still stops at the next task; install it
+# image does not always have it. Without it the repository tasks below fail
+# before they write anything. In --check mode this task installs nothing, so a
+# check run on a host that lacks the library still stops at them; install it
 # first or let the first run be a real one.
 - name: Install the library the repository task needs
   ansible.builtin.apt:
@@ -16,13 +30,21 @@
     update_cache: true
     cache_valid_time: 3600
 
-- name: Add the XRPL apt repository
+# Hosts set up by earlier versions of this role still have the old source. It
+# can only ever offer older packages, so it goes.
+- name: Remove the old repos.ripple.com source
   ansible.builtin.deb822_repository:
     name: ripple
+    state: absent
+  register: xrpld_old_repo
+
+- name: Add the XRP Ledger Foundation apt repository
+  ansible.builtin.deb822_repository:
+    name: xrplf
     types: [deb]
     uris: "{{ xrpld_apt_repo_url }}"
-    suites: "{{ ansible_facts.distribution_release }}"
-    components: "{{ xrpld_apt_component }}"
+    suites: [any]
+    components: [main]
     signed_by: "{{ xrpld_apt_key_url }}"
     state: present
     enabled: true
@@ -35,4 +57,4 @@
 - name: Update apt cache after a repository change  # noqa: no-handler
   ansible.builtin.apt:
     update_cache: true
-  when: xrpld_repo is changed
+  when: xrpld_repo is changed or xrpld_old_repo is changed

@@ -17,7 +17,7 @@ failures=0
 play() {
   local host=$1; shift
   (cd ansible && ansible-playbook -i ../tests/inventory.yml playbooks/site.yml \
-    --limit "$host" --tags config --check --diff \
+    --limit "$host" --tags "${TAGS:-config}" --check --diff \
     -e ansible_become=false \
     -e "xrpld_config_dir=$work/etc xrpld_database_path=$work/db xrpld_log_file=$work/log/debug.log" \
     -e "xrpld_user=$(id -un) xrpld_group=$(id -gn)" \
@@ -56,6 +56,9 @@ refuses "unknown network" "is not described" test-stock -e xrpl_network=moonnet
 refuses "validator without stock peers" "that list is empty" test-validator -e '{"xrpld_stock_peers": []}'
 refuses "validator with public WebSocket" "Public WebSocket access must be disabled" \
   test-validator -e xrpld_ws_public_port=6007
+TAGS=repo refuses "old apt channel variable" "are no longer used" test-stock -e xrpld_apt_component=stable
+TAGS=repo refuses "old apt channel key in the network map" "are no longer used" test-stock \
+  -e '{"xrpld_networks": {"testnet": {"network_id": "testnet", "apt_component": "stable"}}}'
 
 hides "token and seed stay out of --diff" SENTINEL test-validator \
   -e xrpld_validator_token=SENTINELTOKEN -e xrpld_node_seed=SENTINELSEED

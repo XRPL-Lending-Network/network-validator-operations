@@ -54,7 +54,8 @@ network map.
 
 ## What the role does and does not do
 
-It installs the package from Ripple's apt repository, writes `xrpld.cfg` and
+It installs the package from the XRP Ledger Foundation's apt repository, writes
+`xrpld.cfg` and
 `validators.txt`, and manages the service. Stock nodes are restarted one at a
 time, each only after the previous one reports itself synced again. That is
 all, on purpose. It does not harden the operating system, set up a firewall,

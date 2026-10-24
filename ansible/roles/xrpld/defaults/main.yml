@@ -20,14 +20,24 @@ xrpld_log_file: /var/log/xrpld/debug.log
 xrpld_version: ""
 
 # --- apt ------------------------------------------------------------------
-xrpld_apt_key_url: https://repos.ripple.com/repos/api/gpg/key/public
-xrpld_apt_repo_url: https://repos.ripple.com/repos/rippled-deb
+# Packages come from the XRP Ledger Foundation. The old repository on
+# repos.ripple.com stops at 3.3.0 for Ubuntu 24.04 and gets no newer builds,
+# and nothing there says so: apt simply never offers an upgrade.
+#
+# The channel is part of the repository name: stable, rc, beta or develop.
+# Anything but stable can be broken at any time; keep it off production.
+# The suite is "any" for every Ubuntu and Debian release.
+#
+# Signing key fingerprint, as published on xrpl.org:
+#   B655 4167 4122 1F78 0FBC  FBC9 AA84 D41A 11D2 9FA9
+xrpld_apt_key_url: https://packages.xrplf.org/xrplf.asc
+xrpld_apt_repo_url: "https://packages.xrplf.org/repository/deb-{{ xrpld_apt_channel }}"
 # Read from the network map below, but overridable with -e. It is a separate
 # variable for a reason: an earlier version read the network map directly in
 # the repository task, and -e was silently ignored. That failure looks like
 # "the channel is wrong": apt updates happily and simply does not see versions
 # from the other channel.
-xrpld_apt_component: "{{ xrpld_net.apt_component | default('stable') }}"
+xrpld_apt_channel: "{{ xrpld_net.apt_channel | default('stable') }}"
 
 # --- networks -------------------------------------------------------------
 # The peer port is NOT the same on every network, and this is not cosmetic.
@@ -38,7 +48,7 @@ xrpld_apt_component: "{{ xrpld_net.apt_component | default('stable') }}"
 xrpld_networks:
   mainnet:
     network_id: main
-    apt_component: stable
+    apt_channel: stable
     bootstrap_hub: r.ripple.com
     bootstrap_port: 51235
     vl_sites: [https://vl.ripple.com, https://unl.xrplf.org]
@@ -48,7 +58,7 @@ xrpld_networks:
 
   testnet:
     network_id: testnet
-    apt_component: stable
+    apt_channel: stable
     bootstrap_hub: s.altnet.rippletest.net
     bootstrap_port: 2459
     vl_sites: [https://vl.altnet.rippletest.net]
@@ -56,7 +66,7 @@ xrpld_networks:
 
   devnet:
     network_id: devnet
-    apt_component: stable
+    apt_channel: stable
     bootstrap_hub: s.devnet.rippletest.net
     bootstrap_port: 2459
     vl_sites: [https://vl.devnet.rippletest.net]
