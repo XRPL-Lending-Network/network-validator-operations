@@ -28,7 +28,8 @@ only to stock nodes of your own, and stock nodes that face the network.
 ## Quick start
 
 ```bash
-git clone <this repo> && cd network-validator-operations/ansible
+git clone https://github.com/XRPL-Lending-Network/network-validator-operations.git
+cd network-validator-operations/ansible
 cp inventory.example.yml inventory.yml
 for f in all stock validators; do cp group_vars/$f.example.yml group_vars/$f.yml; done
 # edit inventory.yml and group_vars/*.yml
@@ -54,14 +55,12 @@ network map.
 ## What the role does and does not do
 
 It installs the package from Ripple's apt repository, writes `xrpld.cfg` and
-`validators.txt`, and manages the service. That is all, on purpose. It does
-not harden the operating system, set up a firewall, build a private network
-between your machines, or install monitoring; those are yours to make
-decisions about, and a role that quietly made them for you would be worse.
-
-For monitoring, [xrpl-vantage](https://github.com/XRPL-Lending-Network/xrpl-vantage) is
-the companion piece: an exporter and alert rules for exactly this shape of
-deployment, including the failures described in the guide.
+`validators.txt`, and manages the service. Stock nodes are restarted one at a
+time, each only after the previous one reports itself synced again. That is
+all, on purpose. It does not harden the operating system, set up a firewall,
+build a private network between your machines, or install monitoring; those
+are yours to make decisions about, and a role that quietly made them for you
+would be worse. For monitoring, see [below](#monitoring).
 
 ## The key ceremony is not automated, deliberately
 

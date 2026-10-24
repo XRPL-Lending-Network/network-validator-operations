@@ -7,7 +7,10 @@ own wrong assumptions rather than any actual software.
 Theory first, because none of the rest makes sense without it. Then the setup.
 Then everything we broke. Honestly, the third part is the useful one.
 
-Every address, key and domain in the examples is made up.
+Every address, key and domain in the examples is made up. Numbers we call our
+own were measured on our nodes on mainnet around the launch in August 2026,
+with the xrpld versions of that time. They describe one deployment, not a
+benchmark, so check them against yours.
 
 ## How the thing actually works
 
@@ -130,9 +133,10 @@ The validator has no public peer port at all. It dials out to its own stock node
 through the tunnel. The stocks are public, hold many peers, and keep the
 validator away from direct contact with the network.
 
-The reasoning is simple. The validator's address is what gets attacked. No
-inbound ports, no surface. The firewall here is a second line rather than the
-only one, because there is nothing listening to begin with.
+The reasoning is simple. The validator's address is what gets attacked, so
+nothing peer-facing on it should be reachable from the internet. Its peer port
+listens only on the private address, which leaves SSH as the one public service
+to protect. The firewall here is a second line rather than the only one.
 
 ```ini
 # on the validator
@@ -205,8 +209,9 @@ owner_country = "XX"
 server_country = "XX"
 ```
 
-The requirements are strict: HTTPS only, `Access-Control-Allow-Origin: *`, and
-content type `application/toml`. You do not need a working website though,
+The requirements are strict: HTTPS only and `Access-Control-Allow-Origin: *`.
+Serve it as `application/toml`, which is the recommended type; tools reading the
+file should also accept `text/plain`. You do not need a working website though,
 serving one file is enough. It has nothing to do with the validator host and does
 not need to live there.
 
@@ -274,9 +279,10 @@ they come close.
 5. **Validator identity, for nodes that validate.** For nodes intended to
    validate and configured with a validator token, verify the expected public
    validator identity using local admin `server_info`: `pubkey_validator` should
-   be the master public key you published, the one starting `nHB...`. A node in
-   validator topology that runs without a token on purpose is an ordinary peer:
-   its `pubkey_validator` reads `none`, and that is correct.
+   be exactly the master public key you published. Compare the whole key, not
+   just how it starts. A node in validator topology that runs without a token
+   on purpose is an ordinary peer: its `pubkey_validator` reads `none`, and that
+   is correct.
 
 6. **Proposing, for the same nodes.** After synchronization, these nodes should
    normally reach `proposing`. A validation-enabled node that does not reach or
@@ -397,9 +403,9 @@ doubled in the same period.
 
 One more thing to check before blaming the network. Part of the symptom lives
 outside rippled, in explorer infrastructure. If your validator shows under its
-ephemeral key while the domain displays correctly, then the explorer already has
-your manifest in its database and the fault is in how it serves the record, not in
-propagation. One query against its manifest archive settles it.
+ephemeral key while the domain displays correctly, the explorer most likely
+already has your manifest, and the problem is in how it serves the record rather
+than in propagation. A query against its manifest archive shows which it is.
 
 The topic is alive in the rippled tracker (the discussion about manifest gossip
 for non-UNL validators) and in the XRPScan tracker, where a maintainer replies and
@@ -445,7 +451,7 @@ reaches `proposing`. Within a day agreement settles at a hundred percent. After
 that come weeks and months of building recognisability, a domain and a reputation,
 and only then is there any point discussing a UNL.
 
-Over ten days ours signed 262,000 ledgers with 99.66% agreement and missed 891,
+Over its first 262,000 ledgers ours reached 99.66% agreement and missed 891,
 nearly all of them in the first days while we were migrating between versions.
 None since.
 
