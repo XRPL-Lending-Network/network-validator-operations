@@ -1,0 +1,55 @@
+---
+# Handlers normally run at the end of the play. Flushing them here restarts the
+# node now, so that the check below looks at the restarted process and the
+# play does not move on to the next node while this one is still catching up.
+- name: Restart now if anything changed
+  ansible.builtin.meta: flush_handlers
+
+# "The service is active" is not the same as "the node is back on the
+# network". A stock node counts as ready once it reports a recent validated
+# ledger, a synced state and at least one peer. Connection errors while it
+# starts are retried like any other not-ready answer.
+- name: Wait until the node is synced again
+  ansible.builtin.uri:
+    url: >-
+      http://{{ '[' ~ xrpld_admin_bind ~ ']' if ':' in xrpld_admin_bind else xrpld_admin_bind }}:{{ xrpld_rpc_port }}/
+    method: POST
+    timeout: 5
+    body_format: json
+    body:
+      method: server_info
+    return_content: true
+  register: xrpld_ready
+  until: >-
+    (xrpld_ready.json.result.info.server_state | default('')) in xrpld_ready_states
+    and (xrpld_ready.json.result.info.validated_ledger.age | default(xrpld_ready_max_ledger_age + 1) | int)
+    <= xrpld_ready_max_ledger_age
+    and (xrpld_ready.json.result.info.peers | default(0) | int) > 0
+  retries: "{{ xrpld_ready_retries }}"
+  delay: "{{ xrpld_ready_delay }}"
+  failed_when: false
+  changed_when: false
+  when:
+    - xrpld_wait_for_sync | bool
+    - not ansible_check_mode
+
+- name: Stop the rollout if the node did not sync
+  ansible.builtin.assert:
+    that:
+      - (xrpld_ready.json.result.info.server_state | default('')) in xrpld_ready_states
+      - >-
+        (xrpld_ready.json.result.info.validated_ledger.age | default(xrpld_ready_max_ledger_age + 1) | int)
+        <= xrpld_ready_max_ledger_age
+      - (xrpld_ready.json.result.info.peers | default(0) | int) > 0
+    fail_msg: >-
+      {{ inventory_hostname }} did not report a synced state, a validated
+      ledger younger than {{ xrpld_ready_max_ledger_age }} seconds and at least
+      one peer within {{ (xrpld_ready_retries | int) * (xrpld_ready_delay | int) }}
+      seconds. Stopping here, so no further node is restarted while this one is
+      off the network. Last state:
+      {{ xrpld_ready.json.result.info.server_state | default('no answer') }}.
+      Check it with "Verify after deployment or restart" in docs/GUIDE.md.
+    quiet: true
+  when:
+    - xrpld_wait_for_sync | bool
+    - not ansible_check_mode

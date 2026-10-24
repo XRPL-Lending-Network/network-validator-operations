@@ -289,7 +289,10 @@ they come close.
 
 8. **Upgrades: stock nodes first, validator last.** Upgrade the stock nodes one at
    a time and run this check against the network after each one. Upgrade the
-   validator last, then go through the whole list again.
+   validator last, then go through the whole list again. The playbook already
+   restarts stock nodes one at a time and waits until each reports itself synced
+   before touching the next, but that wait looks only at the node itself, so
+   step 3 is still yours to do.
 
 ## What we broke
 

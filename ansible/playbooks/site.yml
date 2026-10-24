@@ -8,8 +8,13 @@
 # can be pointed at them, and the validator refuses to configure without a
 # peer list, which is the check catching that rather than a node starting up
 # alone and looking fine.
+#
+# Stock nodes go one at a time. Each is restarted only after the previous one
+# has reported itself synced again, so a run of this playbook does not take
+# both of the validator's paths to the network down at once.
 - name: Stock nodes
   hosts: stock
+  serial: 1
   become: true
   gather_facts: true
   roles:

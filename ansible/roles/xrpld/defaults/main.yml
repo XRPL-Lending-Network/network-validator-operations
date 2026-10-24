@@ -217,4 +217,20 @@ xrpld_log_partitions:
 # production and a restart is unwelcome: a validator drops out of proposing
 # while it catches up. Changes land at the next planned restart.
 #   ansible-playbook playbooks/site.yml -e xrpld_allow_restart=false
+#
+# It controls only the role's own restart. What the package's install scripts
+# do during an upgrade is up to the package.
 xrpld_allow_restart: true
+
+# After a restart, and at the end of every run, the role waits until the node
+# reports one of these states, a validated ledger younger than the age below
+# and at least one peer. Stock nodes are handled one at a time (serial: 1 in
+# site.yml), so a node that does not come back stops the run before the next
+# one is restarted. A first sync from an empty database can take longer than
+# the default wait; raise the retries for that run, or set
+# xrpld_wait_for_sync=false and verify by hand.
+xrpld_wait_for_sync: true
+xrpld_ready_states: [full, proposing, validating]
+xrpld_ready_max_ledger_age: 60
+xrpld_ready_retries: 60
+xrpld_ready_delay: 10

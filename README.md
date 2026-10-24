@@ -36,6 +36,11 @@ ansible-playbook playbooks/site.yml --check --diff
 ansible-playbook playbooks/site.yml
 ```
 
+On a first deployment every node syncs from an empty database before the run
+moves on to the next one. On mainnet that can take longer than the default
+wait of ten minutes, so raise it for that run:
+`ansible-playbook playbooks/site.yml -e xrpld_ready_retries=180`.
+
 `--diff` shows the changes to every file except `xrpld.cfg`. That one carries
 the decrypted validator token and node seed, so the role never prints its diff.
 

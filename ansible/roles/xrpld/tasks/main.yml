@@ -36,3 +36,9 @@
 - name: Service
   ansible.builtin.import_tasks: service.yml
   tags: [xrpld, service]
+
+# Tagged always: a run limited to --tags config or --tags install can still
+# restart the node, and that is exactly when the wait matters.
+- name: Wait for the node
+  ansible.builtin.import_tasks: wait.yml
+  tags: [xrpld, always]
