@@ -127,7 +127,7 @@ A layout worth copying:
 ```
 
 The validator has no public peer port at all. It dials out to its own stock nodes
-through the tunnel. The stocks are public, hold hundreds of peers, and keep the
+through the tunnel. The stocks are public, hold many peers, and keep the
 validator away from direct contact with the network.
 
 The reasoning is simple. The validator's address is what gets attacked. No
@@ -340,8 +340,17 @@ ones with room in their manifest cache, and the only ones capable of learning a
 new key. We had shut the door on the very people we were trying to reach.
 
 The goal is not "more connections" but "always keep a free slot for a newcomer".
-Keep the cap well above your actual peer count. Outbound connections are capped
-internally at sixteen and are not affected by this setting.
+A node that sits at its cap turns newcomers away.
+
+How the cap splits, in xrpld 3.3.0 and 3.4.1 and with `[peers_in_max]` and
+`[peers_out_max]` left unset: the node aims for 15% of `[peers_max]` outbound,
+never fewer than ten, and leaves the rest for inbound. At the default of 21 that
+is 10 out and 11 in, at 60 it is 10 and 50, at 200 it is 30 and 170. These are
+targets, not the counts you will see. A node with `[peer_private] 1` takes no
+inbound connections from ordinary peers, so all of its cap goes to outbound;
+fixed and cluster peers are let in regardless, and do not count against the
+cap. Setting `[peers_in_max]` or `[peers_out_max]` replaces this split, and
+`[peers_max]` is then ignored.
 
 ### `max_untrusted_count` gates inbound too
 
@@ -421,7 +430,7 @@ rather than against your own `server_state`, see the first item.
 - [ ] `ledger_history none`, `online_delete` sized for two backends
 - [ ] Database on its own partition with room for the rotation peak
 - [ ] `ManifestCache` at info
-- [ ] `[peers_max]` comfortably above your actual peer count
+- [ ] `[peers_max]` leaves free inbound slots, and you know what the traffic costs
 - [ ] Alert on validated ledger age
 - [ ] Version pinned explicitly
 - [ ] `xrp-ledger.toml` published

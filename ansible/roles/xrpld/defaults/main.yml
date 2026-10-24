@@ -140,9 +140,10 @@ xrpld_ledger_history: none
 # produced 1522 GB/day, which is 3.8 and 8.0 GB per peer. Check your
 # provider's allowance before raising it.
 #
-# There is also a floor worth knowing: too LOW a value makes a node refuse
-# inbound connections, so newcomers cannot reach it. If you care about being
-# reachable, do not leave this at the default.
+# Inbound slots are what is left after outbound. In 3.3.0 and 3.4.1 a public node
+# aims for 15% of the cap outbound, never fewer than ten, so the default 21
+# leaves 11 inbound slots and 60 leaves 50. Once the inbound slots are full,
+# newcomers cannot reach the node. docs/GUIDE.md has the details.
 xrpld_peers_max: ""
 
 # How many manifests of unlisted validators the node keeps, and how many it

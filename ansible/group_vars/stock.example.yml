@@ -2,9 +2,10 @@
 # Copy to stock.yml.
 xrpld_node_role: stock
 
-# Raise the peer cap if you want to be reachable. The default of 21 is low
-# enough that a node will refuse inbound connections, and newcomers then
-# cannot reach you at all.
+# Inbound connections get what is left of the cap after outbound. In xrpld
+# 3.3.0 and 3.4.1 the default of 21 leaves 11 inbound slots and 60 leaves 50; once
+# they are full, newcomers cannot reach the node. 60 is an example, not a
+# recommendation.
 #
 # Bandwidth scales with this, and not gently. Measured on one node: 156 peers
 # produced 593 GB/day and 191 peers produced 1522 GB/day. Check your
